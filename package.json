@@ -1,6 +1,6 @@
 {
   "name": "wiki-update-companion",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Automated Update Companion for Wiki.js",
   "main": "index.js",
   "private": true,
@@ -16,7 +16,7 @@
   },
   "homepage": "https://github.com/requarks/wiki-update-companion#readme",
   "dependencies": {
-    "dockerode": "3.3.1",
-    "fastify": "3.29.0"
+    "dockerode": "3.3.4",
+    "fastify": "4.9.2"
   }
 }

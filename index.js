@@ -1,16 +1,18 @@
 const Docker = require('dockerode')
 
-async function upgrade (version) {
+async function upgrade (name, version) {
   console.info('Connecting to Docker API...')
   const dk = new Docker({ socketPath: '/var/run/docker.sock' })
 
-  console.info('Finding wiki container...')
+  console.info(`Finding ${name} container...`)
   const containers = await dk.listContainers({ all: true })
-  const wiki = containers.find(c => c.Names.some(n => n === '/wiki' || n === 'wiki'))
+  const wiki = containers.find(c => {
+    return c.Names.some(n => n === `/${name}` || n === name) && (c.Image.startsWith('ghcr.io/requarks/wiki') || c.Image.startsWith('requarks/wiki'))
+  })
   if (!wiki) {
-    throw new Error('Could not find wiki container.')
+    throw new Error(`Could not find ${name} container.`)
   }
-  console.info(`Found wiki container (ID ${wiki.Id})`)
+  console.info(`Found ${name} container (ID ${wiki.Id})`)
   const wk = dk.getContainer(wiki.Id)
 
   const wkConfig = await wk.inspect()
@@ -30,11 +32,11 @@ async function upgrade (version) {
 
   console.info('Recreating container...')
   const wkn = await dk.createContainer({
-    name: 'wiki',
+    name: name,
     Image: `ghcr.io/requarks/wiki:${version}`,
     Env: wkConfig.Config.Env,
     ExposedPorts: wkConfig.Config.ExposedPorts,
-    Hostname: 'wiki',
+    Hostname: name,
     HostConfig: wkConfig.HostConfig
   })
   console.info('Starting container...')
@@ -51,7 +53,10 @@ async function main () {
 
   fastify.post('/upgrade/:version?', async (request, reply) => {
     try {
-      upgrade(request.params.version || '2')
+      upgrade(
+        request.query.container || 'wiki',
+        request.params.version || '2'
+        )
       return { started: true }
     } catch (err) {
       console.error(err)
@@ -60,7 +65,10 @@ async function main () {
   })
   
   try {
-    await fastify.listen(80, '0.0.0.0')
+    await fastify.listen({
+      port: 80,
+      host: '0.0.0.0'
+    })
   } catch (err) {
     fastify.log.error(err)
     process.exit(1)
