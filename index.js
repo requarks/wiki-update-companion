@@ -28,7 +28,18 @@ async function upgrade (name, version) {
   console.info('Container has been removed.')
 
   console.info('Pulling latest Wiki.js image...')
-  await dk.pull(`ghcr.io/requarks/wiki:${version}`)
+  await new Promise((resolve, reject) => {
+    dk.pull(`ghcr.io/requarks/wiki:${version}`, (err, stream) => {
+      if (err) { return reject(err) }
+      docker.modem.followProgress(stream, (err) => {
+        if (err) {
+          reject(err)
+        } else {
+          resolve()
+        }
+      })
+    })
+  })
 
   console.info('Recreating container...')
   const wkn = await dk.createContainer({
