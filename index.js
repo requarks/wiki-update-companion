@@ -31,7 +31,7 @@ async function upgrade (name, version) {
   await new Promise((resolve, reject) => {
     dk.pull(`ghcr.io/requarks/wiki:${version}`, (err, stream) => {
       if (err) { return reject(err) }
-      docker.modem.followProgress(stream, (err) => {
+      dk.modem.followProgress(stream, (err) => {
         if (err) {
           reject(err)
         } else {
