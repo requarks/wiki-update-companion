@@ -1,20 +1,20 @@
 {
-  "name": "wiki-update-companion",
+  "name": "mathesar-update-companion",
   "version": "2.1.0",
-  "description": "Automated Update Companion for Wiki.js",
+  "description": "Automated Update Companion for Mathesar",
   "main": "index.js",
   "private": true,
   "scripts": {},
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/requarks/wiki-update-companion.git"
+    "url": "git+https://github.com/centerofci/mathesar-update-companion.git"
   },
-  "author": "Nicolas Giard",
+  "author": "Dominykas Mostauskis",
   "license": "GPL-3.0",
   "bugs": {
-    "url": "https://github.com/requarks/wiki-update-companion/issues"
+    "url": "https://github.com/centerofci/mathesar-update-companion/issues"
   },
-  "homepage": "https://github.com/requarks/wiki-update-companion#readme",
+  "homepage": "https://github.com/centerofci/mathesar-update-companion",
   "dependencies": {
     "dockerode": "3.3.4",
     "fastify": "4.9.2"

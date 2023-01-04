@@ -1,10 +1,12 @@
 FROM node:16-alpine
-LABEL maintainer="requarks.io"
+LABEL maintainer="centerofci.org"
 
-RUN mkdir -p /wiki-update && \
-    chown -R node:node /wiki-update
+ARG workdir="/mathesar-update"
 
-WORKDIR /wiki-update
+RUN mkdir -p $workdir && \
+    chown -R node:node $workdir
+
+WORKDIR $workdir
 
 COPY index.js index.js
 COPY LICENSE LICENSE
