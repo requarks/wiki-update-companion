@@ -43,7 +43,7 @@ async function upgrade (name, version) {
 
   console.info('Pulling latest Mathesar image...')
   await new Promise((resolve, reject) => {
-    dk.pull(`ghcr.io/centerofci/mathesar:${version}`, (err, stream) => {
+    dk.pull(`${ghcrUrl}:${version}`, (err, stream) => {
       if (err) { return reject(err) }
       dk.modem.followProgress(stream, (err) => {
         if (err) {
