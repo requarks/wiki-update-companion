@@ -1,35 +1,49 @@
 const Docker = require('dockerode')
 
+const defaultMathesarServiceContainerName = 'mathesar_service'
+const defaultMajorVersion = '1'
+const ghcrUrl = 'ghcr.io/centerofci/mathesar'
+
+function isMathesarServiceContainer (name, container) {
+  hasCorrectName = container.Names.some(n => n === `/${name}` || n === name)
+  hasCorrectImage = (
+    container.Image.startsWith(ghcrUrl)
+    || container.Image.startsWith('centerofci/mathesar')
+  )
+  return hasCorrectName && hasCorrectImage
+}
+
+async function getMathesarServiceContainer (name) () {
+  console.info(`Finding ${name} container...`)
+  const containers = await dk.listContainers({ all: true })
+  const containerDesc = containers.find(c => isMathesarServiceContainer(name, c))
+  if (!containerDesc) {
+    throw new Error(`Could not find ${name} container.`)
+  }
+  console.info(`Found ${name} container (ID ${containerDesc.Id})`)
+  const container = dk.getContainer(containerDesc.Id)
+  return await container.inspect()
+}
+
 async function upgrade (name, version) {
   console.info('Connecting to Docker API...')
   const dk = new Docker({ socketPath: '/var/run/docker.sock' })
 
-  console.info(`Finding ${name} container...`)
-  const containers = await dk.listContainers({ all: true })
-  const wiki = containers.find(c => {
-    return c.Names.some(n => n === `/${name}` || n === name) && (c.Image.startsWith('ghcr.io/requarks/wiki') || c.Image.startsWith('requarks/wiki'))
-  })
-  if (!wiki) {
-    throw new Error(`Could not find ${name} container.`)
-  }
-  console.info(`Found ${name} container (ID ${wiki.Id})`)
-  const wk = dk.getContainer(wiki.Id)
+  const prevContainer = await getMathesarServiceContainer(name)
 
-  const wkConfig = await wk.inspect()
-
-  if (wiki.State !== 'exited') {
+  if (prevContainer.State.Status !== 'exited') {
     console.info('Attempting to stop container...')
-    await wk.stop()
+    await prevContainer.stop()
   }
   console.info('Container is stopped.')
 
   console.info('Removing container...')
-  await wk.remove({ v: true })
+  await prevContainer.remove({ v: true })
   console.info('Container has been removed.')
 
-  console.info('Pulling latest Wiki.js image...')
+  console.info('Pulling latest Mathesar image...')
   await new Promise((resolve, reject) => {
-    dk.pull(`ghcr.io/requarks/wiki:${version}`, (err, stream) => {
+    dk.pull(`ghcr.io/centerofci/mathesar:${version}`, (err, stream) => {
       if (err) { return reject(err) }
       dk.modem.followProgress(stream, (err) => {
         if (err) {
@@ -42,17 +56,17 @@ async function upgrade (name, version) {
   })
 
   console.info('Recreating container...')
-  const wkn = await dk.createContainer({
+  const newContainer = await dk.createContainer({
     name: name,
-    Image: `ghcr.io/requarks/wiki:${version}`,
-    Env: wkConfig.Config.Env,
-    ExposedPorts: wkConfig.Config.ExposedPorts,
+    Image: `${ghcrUrl}:${version}`,
+    Env: prevContainerInfo.Config.Env,
+    ExposedPorts: prevContainerInfo.Config.ExposedPorts,
     Hostname: name,
-    HostConfig: wkConfig.HostConfig
+    HostConfig: prevContainerInfo.HostConfig
   })
   console.info('Starting container...')
-  await wkn.start()
-  console.info(`Container ${wkn.id} started successfully.`)
+  await newContainer.start()
+  console.info(`Container ${newContainer.id} started successfully.`)
 }
 
 async function main () {
@@ -65,8 +79,8 @@ async function main () {
   fastify.post('/upgrade/:version?', async (request, reply) => {
     try {
       upgrade(
-        request.query.container || 'wiki',
-        request.params.version || '2'
+        request.query.container || defaultMathesarServiceContainerName,
+        request.params.version || defaultMajorVersion
         )
       return { started: true }
     } catch (err) {
